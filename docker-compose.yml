@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 services:
   orders:
     build:
@@ -9,15 +9,30 @@ services:
     env_file:
       - ./apps/orders/.env
     depends_on:
-      - mongodb-primary
+      - rabbitmq-service
+      - mongodb
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
     ports:
       - 9900:9900
-  mongodb-primary:
+  billing:
+    build:
+      context: .
+      dockerfile: ./apps/billing/Dockerfile
+      target: development
+    command: npm run start:dev billing
+    env_file:
+      - ./apps/billing/.env
+    depends_on:
+      - rabbitmq-service
+      - mongodb
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+  mongodb:
     image: mongo:latest
-    container_name: mongodb-primary
+    container_name: mongodb
     restart: unless-stopped
     env_file:
       - .env
@@ -25,14 +40,14 @@ services:
       - 27017:27017
     volumes:
       - ./database-data:/data/db
-  mongo-express:
-    image: mongo-express
-    restart: always
+  rabbitmq-service:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-service
+    hostname: rabbitmq
+    volumes:
+      - /var/lib/rabbitmq
     ports:
-      - 8081:8081
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: password
-      ME_CONFIG_MONGODB_SERVER: mongodb-primary
-    depends_on:
-      - mongodb-primary
+      - '5672:5672'
+      - '15672:15672'
+    env_file:
+      - .env
