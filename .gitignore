@@ -3,6 +3,9 @@
 /node_modules
 *.env
 database-data/
+database-data1/
+database-data2/
+data
 
 # Logs
 logs
