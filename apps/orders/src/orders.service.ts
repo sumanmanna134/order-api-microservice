@@ -15,13 +15,21 @@ export class OrdersService {
     return this.orderRepository.find({});
   }
 
-  async createOrder(createOrderDto: CreateOrderRequestDTO) {
+  async createOrder(
+    createOrderDto: CreateOrderRequestDTO,
+    authentication: string,
+  ) {
     const session = await this.orderRepository.startTransaction();
 
     try {
-      const order = await this.orderRepository.create(createOrderDto);
+      const order = await this.orderRepository.create(createOrderDto, {
+        session,
+      });
       await lastValueFrom(
-        this.billingClient.emit('order_created', { createOrderDto }),
+        this.billingClient.emit('order_created', {
+          createOrderDto,
+          Authentication: authentication,
+        }),
       );
       await session.commitTransaction();
       return order;

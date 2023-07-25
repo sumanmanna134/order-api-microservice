@@ -11,9 +11,11 @@ services:
     depends_on:
       - rabbitmq-service
       - mongodb
+      - billing
+      - auth
     volumes:
       - .:/usr/src/app
-      - /usr/src/app/node_modules
+      - orders-node-modules:/usr/src/app/node_modules
     ports:
       - 9900:9900
   billing:
@@ -27,11 +29,29 @@ services:
     depends_on:
       - rabbitmq-service
       - mongodb
+      - auth
     volumes:
       - .:/usr/src/app
-      - /usr/src/app/node_modules
+      - billing-node-modules:/usr/src/app/node_modules
+  auth:
+    build:
+      context: .
+      dockerfile: ./apps/auth/Dockerfile
+      target: development
+    command: npm run start:dev auth
+    env_file:
+      - ./apps/auth/.env
+    ports:
+      - 9901:9901
+    depends_on:
+      - rabbitmq-service
+      - mongodb
+    volumes:
+      - .:/usr/src/app
+      - auth-node-modules:/usr/src/app/node_modules
+
   mongodb:
-    image: mongo:latest
+    image: mongo
     container_name: mongodb
     restart: unless-stopped
     env_file:
@@ -44,10 +64,13 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq-service
     hostname: rabbitmq
-    volumes:
-      - /var/lib/rabbitmq
     ports:
       - '5672:5672'
       - '15672:15672'
     env_file:
       - .env
+volumes:
+  auth-node-modules:
+  orders-node-modules:
+  billing-node-modules:
+  rabbit-mq-data:
